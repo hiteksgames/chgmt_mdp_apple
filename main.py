@@ -30,6 +30,8 @@ for user in users:
     sleep(5)
 
     try:
+
+        # Rentrer dans l'iframe pour se connecter
         try:
             driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, "iframe"))
         except:
@@ -62,6 +64,7 @@ for user in users:
 
         sleep(5)
 
+        # Rentrer dans l'iframe pour changer le mot de passe
         try:
             driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, "iframe"))
         except:
@@ -89,6 +92,7 @@ for user in users:
         # Soumettre le formulaire en appuyant sur Entrée dans le champ de confirmation
         new_password_field2.send_keys(Keys.RETURN)
 
+        # Appuyer une deuxième fois sur Entrée (nécéssaire pour changer le mot de passe)
         sleep(5)
         new_password_field2.send_keys(Keys.RETURN)
 
