@@ -1,7 +1,7 @@
 import csv
 from time import sleep
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
@@ -11,9 +11,6 @@ from selenium.webdriver.support import expected_conditions as EC
 with open('utilisateurs.csv', mode='r') as file:
     csv_reader = csv.DictReader(file)
     users = [row for row in csv_reader]
-
-# Configurer Selenium pour utiliser Chrome
-driver = webdriver.Chrome()
 
 # URL de la page de connexion iCloud
 url = "https://appleid.apple.com/sign-in"
@@ -25,13 +22,12 @@ for user in users:
     new_password = user['new_password']
 
     # Démarrer le navigateur et ouvrir la page de connexion
+    driver = webdriver.Chrome()
     driver.get(url)
 
     sleep(5)
 
     try:
-
-        # Rentrer dans l'iframe pour se connecter
         try:
             driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, "iframe"))
         except:
@@ -64,50 +60,55 @@ for user in users:
 
         sleep(5)
 
-        # Rentrer dans l'iframe pour changer le mot de passe
         try:
             driver.switch_to.frame(driver.find_element(By.CSS_SELECTOR, "iframe"))
         except:
             pass
 
-        # Attendre l'apparition du champ pour le mot de passe actuel
+        # Attendre la fin de l'authentification et naviguer vers la modification du mot de passe
         current_password_field = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".current-password input"))
         )
         current_password_field.send_keys(temp_password)
-
-        # Attendre l'apparition du champ pour le nouveau mot de passe
         new_password_field1 = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".new-password input"))
         )
         new_password_field1.send_keys(new_password)
 
-        # Attendre l'apparition du champ pour confirmer le nouveau mot de passe
         new_password_field2 = WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".confirm-password input"))
         )
         new_password_field2.send_keys(new_password)
-
-        sleep(5)
-        # Soumettre le formulaire en appuyant sur Entrée dans le champ de confirmation
         new_password_field2.send_keys(Keys.RETURN)
-
-        # Appuyer une deuxième fois sur Entrée (nécéssaire pour changer le mot de passe)
         sleep(5)
-        new_password_field2.send_keys(Keys.RETURN)
+        try :
+            new_password_field2.send_keys(Keys.RETURN)
+        except:
+            pass
+        sleep(5)
+        try :
+            new_password_field2.send_keys(Keys.RETURN)
+        except:
+            pass
+        sleep(3)
 
         print(f"Mot de passe changé pour {apple_id}")
 
-        sleep(15)
+        users.remove(user)
+        with open('utilisateurs.csv', mode='w', newline='') as file:
+            fieldnames = ['apple_id', 'temp_password', 'a2f_code', 'new_password']
+            writer = csv.DictWriter(file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(users)
 
-    except (TimeoutException, NoSuchElementException) as e:
-        print(f"Erreur lors du traitement de {apple_id}: {e}")
-        sleep(5)
+        driver.delete_all_cookies()
         driver.quit()
-        continue
+
+
+    except (TimeoutException, NoSuchElementException, StaleElementReferenceException) as e:
+        print(f"Erreur lors du traitement de {apple_id}: {e}")
+        driver.delete_all_cookies()
+        driver.quit()
 
     finally:
-        driver.switch_to.default_content()
-
-# Fermer le navigateur
-driver.quit()
+        driver.quit()
